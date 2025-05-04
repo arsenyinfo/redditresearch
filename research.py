@@ -7,15 +7,14 @@ import time
 import json
 import os
 from datetime import datetime
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any
 from functools import lru_cache
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from rich.console import Console
-from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TaskID
+from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.markdown import Markdown
-from rich import print as rprint
 import httpx
 import logging
 
@@ -402,7 +401,7 @@ class ResearchTool:
                     '--variable', 'linkcolor=blue',
                 ]
 
-                result = subprocess.run(cmd, check=True, capture_output=True)
+                subprocess.run(cmd, check=True, capture_output=True)
                 return True
             except subprocess.CalledProcessError as e:
                 logger.error(f"Pandoc error: {e.stderr.decode() if e.stderr else str(e)}")
@@ -412,7 +411,7 @@ class ResearchTool:
                 # Clean up temporary file
                 try:
                     os.unlink(temp_md_path)
-                except:
+                except Exception:
                     pass
 
         except Exception as e:
@@ -505,7 +504,7 @@ def main(initial_prompt: str, pdf: bool = True):
 
         # Step 5: Generate final report
         if relevant_posts:
-            final_report = research_tool.generate_report(relevant_posts, refined_prompt, generate_pdf=pdf)
+            research_tool.generate_report(relevant_posts, refined_prompt, generate_pdf=pdf)
         else:
             console.print("[bold red]No relevant posts found. Try refining your prompt and running again.[/bold red]")
 

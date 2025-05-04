@@ -1,6 +1,5 @@
 from litellm import completion
 from litellm.files.main import ModelResponse
-from typing import Optional, NamedTuple, Dict, Any
 from dataclasses import dataclass
 
 import re
@@ -42,7 +41,7 @@ def query_llm(prompt: str, model: str = "gemini/gemini-2.5-flash-preview-04-17")
                     model=model
                 )
             raise ValueError(f"Unexpected message format: {message}")
-        case [choice, *others]:
+        case [choice, *_]:
             # Use first choice if multiple are returned
             message = choice.message.to_dict()
             if message.get("role") == "assistant" and "content" in message:
