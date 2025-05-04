@@ -13,4 +13,5 @@ wheels/
 .cache/
 .python-version
 config.py
-channels.py
+sandbox.py
+results/

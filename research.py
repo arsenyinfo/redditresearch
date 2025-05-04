@@ -390,8 +390,6 @@ class ResearchTool:
                 temp_md_path = temp_md.name
 
             try:
-                # Run pandoc to convert markdown to PDF
-                # need `brew install --cask basictex` and `brew install pandoc`
                 cmd = [
                     'pandoc',
                     temp_md_path,

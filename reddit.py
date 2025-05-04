@@ -1,7 +1,7 @@
 import redditwarp.SYNC
 from config import CONFIG
-from redditwarp.models.submission import LinkPost, TextPost, GalleryPost, Submission
-from typing import Optional, Sequence
+from redditwarp.models.submission import LinkPost, TextPost, GalleryPost
+from typing import Optional
 
 class RedditToolset:
     def __init__(self):
