@@ -1,0 +1,19 @@
+[project]
+name = "redditresearch"
+version = "0.1.0"
+description = "Reddit Research Tool - AI-powered research assistant for Reddit"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fire>=0.7.0",
+    "httpx>=0.28.1",
+    "joblib>=1.4.2",
+    "litellm>=1.67.6",
+    "redditwarp>=1.3.0",
+    "tqdm>=4.67.1",
+    "rich>=13.7.0",
+    "tenacity>=8.2.3",
+]
+
+[dependency-groups]
+dev = ["pdbpp>=0.11.6"]
