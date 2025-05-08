@@ -21,9 +21,9 @@ brew install pandoc
 brew install --cask basictex
 ```
 
-Typical usage with Gemini Flash takes ~5 minutes to generate a report and ~$0.5 in costs, with 200-300 pages analyzed. Numbers are very variable depending on the prompt.
+Typical usage with Gemini Flash 2.5 takes ~5 minutes to generate a report and ~$0.5 in costs, with 200-300 pages analyzed. Numbers are very variable depending on the prompt.
 
-It also works ok-ish with local models (e.g. ollama/qwen3:30b), but takes hours on a laptop. Don't forget to change Ollama's default max context size (e.g. with env var `OLLAMA_CONTEXT_LENGTH=32768`) for acceptable quality.
+It also works ok-ish with local models (e.g. `ollama/qwen3:30b`), but takes hours on a laptop. Don't forget to change Ollama's default max context size (e.g. with env var `OLLAMA_CONTEXT_LENGTH=32768`) for acceptable quality.
 
 ### Disclaimer
 
