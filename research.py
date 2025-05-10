@@ -73,10 +73,16 @@ class ResearchTool:
             f"[yellow]Retrying Reddit API call (attempt {retry_state.attempt_number}/5)...[/yellow]"
         )
     )
-    def _search_reddit_with_retry(self, query: str, limit: int = 10):
-        """Search Reddit with retry logic"""
+    def _search_reddit_with_retry(self, query: str, subreddit: str = "", limit: int = 10):
+        """Search Reddit with retry logic
+
+        Args:
+            query: The search query string
+            subreddit: Optional subreddit name to restrict search to (without r/ prefix)
+            limit: Maximum number of results to return
+        """
         try:
-            return self.reddit_cli.search(query, limit=limit)
+            return self.reddit_cli.search(query, subreddit=subreddit, limit=limit)
         except Exception as e:
             logger.error(f"Error searching Reddit: {e}")
             raise
@@ -166,23 +172,35 @@ class ResearchTool:
         return refined_prompt
 
     def generate_search_plan(self, refined_prompt: str) -> List[str]:
-        """Generate a search plan with queries based on refined prompt"""
+        """Generate a search plan with queries based on refined prompt
+
+        Supports both general queries and subreddit-specific queries in the format 'r/subreddit: query'
+        """
         with console.status("[bold green]Generating search plan...[/bold green]"):
             final_plan_template = f"""Given the following research prompt, create a detailed plan for research on Reddit posts.
             <research_prompt>
             {refined_prompt}
             </research_prompt>
 
-            The plan should contain a list of diverse search queries wrapped in <search_query> tags. Example:
+            The plan should contain a list of diverse search queries, optionally specifying a subreddit for targeted searches.
+            Format your queries either as:
+            1. Plain query: "search term" - This will search across all of Reddit
+            2. Subreddit-specific query: "r/subreddit_name: search term" - This will search only in the specified subreddit
+
+            Wrap all queries in <search_query> tags. Example:
                 <search_query>
                 search query 1
-                search query 2
-                search query 3
+                r/science: search query 2
+                r/askreddit: search query 3
                 </search_query>
+
             Make sure to include a variety of queries that cover different aspects of the topic.
+            Include both general searches and subreddit-specific searches where appropriate.
             Your queries should be ready to use - do not include placeholders.
+            Queries should be short and simple, as Reddit's search is not very powerful.
             Create at least 10-20 different queries to ensure comprehensive coverage.
             """
+
 
             response = self._cached_query_llm(final_plan_template)
             final_plan = response.content
@@ -213,7 +231,19 @@ class ResearchTool:
             def find_relevant_posts(query: str, limit: int = 10):
                 try:
                     time.sleep(0.5)  # Rate limit to be nice to Reddit API
-                    return self._search_reddit_with_retry(query, limit=limit)
+
+                    # Check if query is subreddit-specific (format: "r/subreddit: query")
+                    subreddit = ""
+                    search_query = query
+
+                    if query.startswith("r/") and ":" in query:
+                        parts = query.split(":", 1)
+                        subreddit = parts[0].strip()
+                        search_query = parts[1].strip()
+                        # Strip the "r/" prefix as the API expects just the subreddit name
+                        subreddit = subreddit[2:]
+
+                    return self._search_reddit_with_retry(search_query, subreddit=subreddit, limit=limit)
                 except Exception as e:
                     logger.error(f"Error searching for query '{query}': {e}")
                     return []
