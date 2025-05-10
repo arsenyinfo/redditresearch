@@ -9,7 +9,12 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any
 from functools import lru_cache
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
 from rich.panel import Panel
@@ -19,11 +24,11 @@ import httpx
 import logging
 
 
-
 logger = logging.getLogger(__name__)
 
 # Rich console for better UX
 console = Console()
+
 
 class ResearchTool:
     """Main class for conducting Reddit research"""
@@ -46,7 +51,7 @@ class ResearchTool:
         wait=wait_exponential(multiplier=1, min=2, max=30),
         before_sleep=lambda retry_state: console.log(
             f"[yellow]Retrying LLM query (attempt {retry_state.attempt_number}/5)...[/yellow]"
-        )
+        ),
     )
     def _query_llm_with_retry(self, prompt: str) -> LLMResponse:
         """Query LLM with retry logic"""
@@ -71,9 +76,11 @@ class ResearchTool:
         wait=wait_exponential(multiplier=1, min=2, max=30),
         before_sleep=lambda retry_state: console.log(
             f"[yellow]Retrying Reddit API call (attempt {retry_state.attempt_number}/5)...[/yellow]"
-        )
+        ),
     )
-    def _search_reddit_with_retry(self, query: str, subreddit: str = "", limit: int = 10):
+    def _search_reddit_with_retry(
+        self, query: str, subreddit: str = "", limit: int = 10
+    ):
         """Search Reddit with retry logic
 
         Args:
@@ -93,7 +100,7 @@ class ResearchTool:
         wait=wait_exponential(multiplier=1, min=2, max=30),
         before_sleep=lambda retry_state: console.log(
             f"[yellow]Retrying Reddit post fetch (attempt {retry_state.attempt_number}/5)...[/yellow]"
-        )
+        ),
     )
     def _fetch_post_with_retry(self, post_id: str):
         """Fetch post with retry logic"""
@@ -105,7 +112,9 @@ class ResearchTool:
 
     def refine_prompt(self, initial_prompt: str) -> str:
         """Refine the initial user prompt with interactive questioning"""
-        with console.status("[bold green]Analyzing your research request...[/bold green]"):
+        with console.status(
+            "[bold green]Analyzing your research request...[/bold green]"
+        ):
             analysis_template = f"""Given the following user prompt for Reddit research, analyze what additional information
             is needed to make the research more effective.
 
@@ -133,15 +142,19 @@ class ResearchTool:
             questions = [q.strip() for q in questions_text.split("\n") if q.strip()]
 
         # Present questions to the user
-        console.print(Panel(Markdown("\n".join(questions)),
-                           title="[bold]To improve your research results, please answer these questions:[/bold]",
-                           border_style="yellow"))
+        console.print(
+            Panel(
+                Markdown("\n".join(questions)),
+                title="[bold]To improve your research results, please answer these questions:[/bold]",
+                border_style="yellow",
+            )
+        )
 
         # Collect answers
         answers = []
         for question in questions:
             # Remove numbering if present
-            clean_question = re.sub(r'^\d+\.\s*', '', question)
+            clean_question = re.sub(r"^\d+\.\s*", "", question)
             answer = Prompt.ask(f"[bold cyan]{clean_question}[/bold cyan]", default="")
             if answer:
                 answers.append(f"Q: {clean_question}\nA: {answer}")
@@ -165,9 +178,13 @@ class ResearchTool:
             response = self._cached_query_llm(refine_template)
             refined_prompt = response.content
 
-        console.print(Panel(Markdown(refined_prompt),
-                           title="[bold]Refined Research Prompt[/bold]",
-                           border_style="green"))
+        console.print(
+            Panel(
+                Markdown(refined_prompt),
+                title="[bold]Refined Research Prompt[/bold]",
+                border_style="green",
+            )
+        )
 
         return refined_prompt
 
@@ -201,16 +218,19 @@ class ResearchTool:
             Create at least 10-20 different queries to ensure comprehensive coverage.
             """
 
-
             response = self._cached_query_llm(final_plan_template)
             final_plan = response.content
             search_queries = extract_tag(final_plan, "search_query").split("\n")
             # Filter out empty queries
             search_queries = [q.strip() for q in search_queries if q.strip()]
 
-        console.print(Panel("\n".join([f"• {q}" for q in search_queries]),
-                          title="[bold]Search Queries[/bold]",
-                          border_style="blue"))
+        console.print(
+            Panel(
+                "\n".join([f"• {q}" for q in search_queries]),
+                title="[bold]Search Queries[/bold]",
+                border_style="blue",
+            )
+        )
 
         return search_queries
 
@@ -224,9 +244,11 @@ class ResearchTool:
             BarColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             TimeElapsedColumn(),
-            console=console
+            console=console,
         ) as progress:
-            task_id = progress.add_task("[green]Searching Reddit...", total=len(search_queries))
+            task_id = progress.add_task(
+                "[green]Searching Reddit...", total=len(search_queries)
+            )
 
             def find_relevant_posts(query: str, limit: int = 10):
                 try:
@@ -243,12 +265,17 @@ class ResearchTool:
                         # Strip the "r/" prefix as the API expects just the subreddit name
                         subreddit = subreddit[2:]
 
-                    return self._search_reddit_with_retry(search_query, subreddit=subreddit, limit=limit)
+                    return self._search_reddit_with_retry(
+                        search_query, subreddit=subreddit, limit=limit
+                    )
                 except Exception as e:
                     logger.error(f"Error searching for query '{query}': {e}")
                     return []
 
-            jobs = [jl.delayed(find_relevant_posts)(query, limit) for query in search_queries]
+            jobs = [
+                jl.delayed(find_relevant_posts)(query, limit)
+                for query in search_queries
+            ]
 
             # Create a callback to update progress
             class ProgressCallback:
@@ -272,29 +299,38 @@ class ResearchTool:
                         all_posts.append(post)
                         unique_post_ids.add(post.id36)
 
-        console.print(f"[bold green]Found {len(all_posts)} unique posts in total.[/bold green]")
+        console.print(
+            f"[bold green]Found {len(all_posts)} unique posts in total.[/bold green]"
+        )
 
         # Save raw posts to cache
-        post_data = [{"id": post.id36, "title": post.title, "url": post.permalink} for post in all_posts]
+        post_data = [
+            {"id": post.id36, "title": post.title, "url": post.permalink}
+            for post in all_posts
+        ]
         cache_path = os.path.join(self.cache_dir, f"posts_{self.session_id}.json")
-        with open(cache_path, 'w') as f:
+        with open(cache_path, "w") as f:
             json.dump(post_data, f, indent=2)
 
         return all_posts
 
-    def analyze_posts(self, all_posts: List[Any], refined_prompt: str) -> List[Dict[str, str]]:
+    def analyze_posts(
+        self, all_posts: List[Any], refined_prompt: str
+    ) -> List[Dict[str, str]]:
         """Fetch and analyze each post"""
         relevant_posts = []
-        post_tokens = {'input': 0, 'output': 0}  # Track tokens for post analysis
+        post_tokens = {"input": 0, "output": 0}  # Track tokens for post analysis
 
         with Progress(
             TextColumn("[bold blue]{task.description}[/bold blue]"),
             BarColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             TimeElapsedColumn(),
-            console=console
+            console=console,
         ) as progress:
-            task_id = progress.add_task("[green]Analyzing posts...", total=len(all_posts))
+            task_id = progress.add_task(
+                "[green]Analyzing posts...", total=len(all_posts)
+            )
 
             def fetch_and_analyze(post, task_id=None):
                 try:
@@ -303,16 +339,18 @@ class ResearchTool:
                     post_title = post.title
 
                     # Check cache first
-                    cache_path = os.path.join(self.cache_dir, f"analysis_{post_id}.json")
+                    cache_path = os.path.join(
+                        self.cache_dir, f"analysis_{post_id}.json"
+                    )
                     if os.path.exists(cache_path):
-                        with open(cache_path, 'r') as f:
+                        with open(cache_path, "r") as f:
                             data = json.load(f)
                             return {
                                 "summary": data.get("summary", ""),
                                 "input_tokens": data.get("input_tokens", 0),
                                 "output_tokens": data.get("output_tokens", 0),
                                 "permalink": data.get("permalink", permalink),
-                                "title": data.get("title", post_title)
+                                "title": data.get("title", post_title),
                             }
 
                     # Fetch and analyze if not in cache
@@ -340,21 +378,23 @@ class ResearchTool:
                         "permalink": permalink,
                         "title": post_title,
                         "input_tokens": response.input_tokens,
-                        "output_tokens": response.output_tokens
+                        "output_tokens": response.output_tokens,
                     }
 
-                    with open(cache_path, 'w') as f:
+                    with open(cache_path, "w") as f:
                         json.dump(result, f)
 
                     return result
                 except Exception as e:
-                    logger.exception(f"Error analyzing post {post.id36 if hasattr(post, 'id36') else 'unknown'}: {e}")
+                    logger.exception(
+                        f"Error analyzing post {post.id36 if hasattr(post, 'id36') else 'unknown'}: {e}"
+                    )
                     return {
                         "summary": "",
                         "input_tokens": 0,
                         "output_tokens": 0,
                         "permalink": "",
-                        "title": ""
+                        "title": "",
                     }
 
             # Use parallel processing with progress updates
@@ -379,17 +419,21 @@ class ResearchTool:
                 summary = result.get("summary", "")
                 if summary and summary.lower() != "no":
                     post_results.append(result)
-                    post_tokens['input'] += result.get("input_tokens", 0)
-                    post_tokens['output'] += result.get("output_tokens", 0)
+                    post_tokens["input"] += result.get("input_tokens", 0)
+                    post_tokens["output"] += result.get("output_tokens", 0)
 
             relevant_posts = post_results
 
-        console.print(f"[bold green]Found {len(relevant_posts)}/{len(all_posts)} relevant posts.[/bold green]")
-        console.print(f"[bold blue]Post analysis used {post_tokens['input']} input tokens and {post_tokens['output']} output tokens.[/bold blue]")
+        console.print(
+            f"[bold green]Found {len(relevant_posts)}/{len(all_posts)} relevant posts.[/bold green]"
+        )
+        console.print(
+            f"[bold blue]Post analysis used {post_tokens['input']} input tokens and {post_tokens['output']} output tokens.[/bold blue]"
+        )
 
         # Save relevant posts to file
         results_path = os.path.join(self.results_dir, "relevant_posts.json")
-        with open(results_path, 'w') as f:
+        with open(results_path, "w") as f:
             json.dump(relevant_posts, f, indent=2)
 
         return relevant_posts
@@ -409,31 +453,44 @@ class ResearchTool:
             import shutil
 
             # Check if pandoc is installed
-            if shutil.which('pandoc') is None:
+            if shutil.which("pandoc") is None:
                 logger.error("Pandoc is not installed. Cannot generate PDF.")
-                console.print("[bold red]Error: Pandoc is not installed. PDF generation skipped.[/bold red]")
-                console.print("[bold yellow]To generate PDFs, please install Pandoc: https://pandoc.org/installing.html[/bold yellow]")
+                console.print(
+                    "[bold red]Error: Pandoc is not installed. PDF generation skipped.[/bold red]"
+                )
+                console.print(
+                    "[bold yellow]To generate PDFs, please install Pandoc: https://pandoc.org/installing.html[/bold yellow]"
+                )
                 return False
 
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as temp_md:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".md", delete=False
+            ) as temp_md:
                 temp_md.write(markdown_content)
                 temp_md_path = temp_md.name
 
             try:
                 cmd = [
-                    'pandoc',
+                    "pandoc",
                     temp_md_path,
-                    '-o', output_path,
-                    '--pdf-engine=pdflatex',
-                    '--variable', 'colorlinks=true',
-                    '--variable', 'linkcolor=blue',
+                    "-o",
+                    output_path,
+                    "--pdf-engine=pdflatex",
+                    "--variable",
+                    "colorlinks=true",
+                    "--variable",
+                    "linkcolor=blue",
                 ]
 
                 subprocess.run(cmd, check=True, capture_output=True)
                 return True
             except subprocess.CalledProcessError as e:
-                logger.error(f"Pandoc error: {e.stderr.decode() if e.stderr else str(e)}")
-                console.print("[bold red]Error running Pandoc. PDF generation failed.[/bold red]")
+                logger.error(
+                    f"Pandoc error: {e.stderr.decode() if e.stderr else str(e)}"
+                )
+                console.print(
+                    "[bold red]Error running Pandoc. PDF generation failed.[/bold red]"
+                )
                 return False
             finally:
                 # Clean up temporary file
@@ -446,7 +503,12 @@ class ResearchTool:
             logger.error(f"Error converting markdown to PDF: {e}")
             return False
 
-    def generate_report(self, relevant_posts: List[Dict[str, str]], refined_prompt: str, generate_pdf: bool = True) -> str:
+    def generate_report(
+        self,
+        relevant_posts: List[Dict[str, str]],
+        refined_prompt: str,
+        generate_pdf: bool = True,
+    ) -> str:
         """Generate final research report
 
         Args:
@@ -470,7 +532,7 @@ class ResearchTool:
             {refined_prompt}
             </research_goals>
             <reddit_summaries>
-            {'\n\n'.join(formatted_summaries)}
+            {"\n\n".join(formatted_summaries)}
             </reddit_summaries>
             The report should be concise and informative, highlighting the key findings and insights from the research.
             IMPORTANT: For each major finding or insight, include a link to the original Reddit post that discusses it using proper markdown link format [title](url).
@@ -480,7 +542,7 @@ class ResearchTool:
 
         # Save final report as markdown
         report_path = os.path.join(self.results_dir, "final_report.md")
-        with open(report_path, 'w') as f:
+        with open(report_path, "w") as f:
             f.write(final_report)
 
         # Generate PDF if requested
@@ -492,13 +554,19 @@ class ResearchTool:
                 else:
                     console.print("[bold red]Failed to generate PDF report.[/bold red]")
 
-        console.print(Panel(Markdown(final_report),
-                          title="[bold]Final Research Report[/bold]",
-                          border_style="green",
-                          expand=False))
+        console.print(
+            Panel(
+                Markdown(final_report),
+                title="[bold]Final Research Report[/bold]",
+                border_style="green",
+                expand=False,
+            )
+        )
 
         console.print(f"\n[bold]Report saved to:[/bold] {report_path}")
-        console.print(f"[bold blue]Report generation used {response.input_tokens} input tokens and {response.output_tokens} output tokens.[/bold blue]")
+        console.print(
+            f"[bold blue]Report generation used {response.input_tokens} input tokens and {response.output_tokens} output tokens.[/bold blue]"
+        )
 
         return final_report
 
@@ -532,9 +600,13 @@ def main(initial_prompt: str, pdf: bool = True):
 
         # Step 5: Generate final report
         if relevant_posts:
-            research_tool.generate_report(relevant_posts, refined_prompt, generate_pdf=pdf)
+            research_tool.generate_report(
+                relevant_posts, refined_prompt, generate_pdf=pdf
+            )
         else:
-            console.print("[bold red]No relevant posts found. Try refining your prompt and running again.[/bold red]")
+            console.print(
+                "[bold red]No relevant posts found. Try refining your prompt and running again.[/bold red]"
+            )
 
         # Report token usage statistics
         total_input = research_tool.total_input_tokens
@@ -548,12 +620,16 @@ def main(initial_prompt: str, pdf: bool = True):
 
         # Save token usage to file
         token_path = os.path.join(research_tool.results_dir, "token_usage.json")
-        with open(token_path, 'w') as f:
-            json.dump({
-                "input_tokens": total_input,
-                "output_tokens": total_output,
-                "total_tokens": total_tokens
-            }, f, indent=2)
+        with open(token_path, "w") as f:
+            json.dump(
+                {
+                    "input_tokens": total_input,
+                    "output_tokens": total_output,
+                    "total_tokens": total_tokens,
+                },
+                f,
+                indent=2,
+            )
         console.print(f"[bold]Token usage saved to:[/bold] {token_path}")
 
     except KeyboardInterrupt:

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import re
 
+
 @dataclass
 class LLMResponse:
     content: str
@@ -11,22 +12,26 @@ class LLMResponse:
     output_tokens: int
     model: str
     total_tokens: int = 0
-    
+
     def __post_init__(self):
         self.total_tokens = self.input_tokens + self.output_tokens
 
+
 def extract_tag(text: str, tag="blog") -> str | None:
-    matches = re.findall(f'<{tag}>(.*?)</{tag}>', text, re.DOTALL)
+    matches = re.findall(f"<{tag}>(.*?)</{tag}>", text, re.DOTALL)
     if matches:
         return matches[0].strip()
 
-def query_llm(prompt: str, model: str = "gemini/gemini-2.5-flash-preview-04-17") -> LLMResponse:
+
+def query_llm(
+    prompt: str, model: str = "gemini/gemini-2.5-flash-preview-04-17"
+) -> LLMResponse:
     messages = [{"content": prompt, "role": "user"}]
     response = completion(model=model, messages=messages)
 
     if not isinstance(response, ModelResponse):
         raise ValueError(f"Expected ModelResponse, got {type(response)}")
-    
+
     input_tokens = response.usage.prompt_tokens
     output_tokens = response.usage.completion_tokens
 
@@ -38,7 +43,7 @@ def query_llm(prompt: str, model: str = "gemini/gemini-2.5-flash-preview-04-17")
                     content=message["content"],
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
-                    model=model
+                    model=model,
                 )
             raise ValueError(f"Unexpected message format: {message}")
         case [choice, *_]:
@@ -49,11 +54,12 @@ def query_llm(prompt: str, model: str = "gemini/gemini-2.5-flash-preview-04-17")
                     content=message["content"],
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
-                    model=model
+                    model=model,
                 )
             raise ValueError(f"Unexpected message format in first choice: {message}")
         case _:
             raise ValueError(f"Unexpected response format: {response}")
+
 
 if __name__ == "__main__":
     response = query_llm("What is the capital of France?")

@@ -3,6 +3,7 @@ from config import CONFIG
 from redditwarp.models.submission import LinkPost, TextPost, GalleryPost
 from typing import Optional
 
+
 class RedditToolset:
     def __init__(self):
         self.client = redditwarp.SYNC.Client(
@@ -13,18 +14,16 @@ class RedditToolset:
 
     def search(self, query: str, subreddit: str = "", limit: int = 25):
         result = self.client.p.submission.search(
-            sr=subreddit,
-            query=query,
-            sort="relevance",
-            amount=10,
-            time="all"
+            sr=subreddit, query=query, sort="relevance", amount=10, time="all"
         )
         return result
 
     def fetch_hot_posts(self, subreddit: str, limit: int = 10):
         return self.client.p.subreddit.pull.hot(subreddit, limit)
 
-    def fetch_post_with_comments(self, post_id: str, comment_limit: int = 1000, comment_depth: int = 5):
+    def fetch_post_with_comments(
+        self, post_id: str, comment_limit: int = 1000, comment_depth: int = 5
+    ):
         submission = self.client.p.submission.fetch(post_id)
         content = (
             f"Title: {submission.title}\n"
@@ -34,7 +33,9 @@ class RedditToolset:
             f"Content: {_get_content(submission)}\n"
         )
 
-        comments = self.client.p.comment_tree.fetch(post_id, sort='top', limit=comment_limit, depth=comment_depth)
+        comments = self.client.p.comment_tree.fetch(
+            post_id, sort="top", limit=comment_limit, depth=comment_depth
+        )
         if comments.children:
             content += "\nComments:\n"
             for comment in comments.children:
@@ -63,12 +64,13 @@ def _format_comment_tree(comment_node, depth: int = 0) -> str:
 def _get_post_type(submission) -> str:
     """Helper method to determine post type"""
     if isinstance(submission, LinkPost):
-        return 'link'
+        return "link"
     elif isinstance(submission, TextPost):
-        return 'text'
+        return "text"
     elif isinstance(submission, GalleryPost):
-        return 'gallery'
-    return 'unknown'
+        return "gallery"
+    return "unknown"
+
 
 def _get_content(submission) -> Optional[str]:
     """Helper method to extract post content based on type"""
